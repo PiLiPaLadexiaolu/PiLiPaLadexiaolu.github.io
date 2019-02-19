@@ -1,83 +1,153 @@
-
-<!doctype html> <!-- 声明文档 -->
-
 <html>
-
-<head>
+    <head>
+        <title>
+            canvas 粒子效果
+        </title>
+        <meta name="Keywords" content="">
+        <meta name="Description" content="">
+    </head>
+    <style>
+        /* 
+        
+         */
+        canvas
+        {
+            display: block;
+            background: #000;
+        }
+    </style>
     
-    <title>
-     music player
-    </title>
+    <boady>
+        <canvas id='canvas'></canvas>
 
-</head>
+       
+    </boady>
 
-<style> 
-/* CSS样式 */
-form{position:relative;}
-	.upload{background:#000;color:#fff;width:100px;height:30px;line-height:30px;text-align:center;cursor:pointer;}
-	input{position:absolute;top:0;left:0;height:30px;width:100px;opacity:0;filter:alpha(opacity=0);cursor:pointer;}
-</style>
+    <script>
+            /*
+            Canvas粒子连线
+            canvas：画布 图形化接口（API）
+            基础：canvas基于原生JavaScript驱动
+            粒子连线的需求分析：流程
+            1.初始化画布
+                1.1画布的宽高=浏览器的宽高
+            2.创建粒子
+                2.1 DOM 需求可行 组成网页的结构 性能不可行
+                2.2 canvas 圆形 在canvas上画圆形
+                2.3 初始化粒子属性 数量 num 200 可以固定 半径2 圆心：随机排列
+            3.粒子运动
+                3.1  通过.style.left .style.top 方法动 肯定不行 因为是DOM中的
+                3.2 原理：本质上并不是实际的运动，其实是不断的重新绘画 canvas 硬件加速 不占主进程
+                3.3 随机绘画方向 随机改变x，y的偏移量
+                3.4 边界检测 本质检查data里的X,Y 到边界之后 加-号取反
+            4.粒子之间是否构成连线条件
+                4.1 点可以构成什么样的图形形成一种算法 勾股定理 
+            5.构成条件之间的粒子进行连线
+            6.判断鼠标是否移入
+            7.鼠标和粒子之间进行连线
+            8.完善业务模型
+            写代码要思路清晰 不要盲目编程
+            一边写一边分析并不好 是大牛才这样
+            没有能力的话就先去做分析
+            业务逻辑 控制流程 数据 算法 分离
+            不要做一个低级的开发者
+            */
+            //console.log(canvas);
 
-<script>
-// Javascript内容
 
-function change() {
-	var pic = document.getElementById("preview"),
-	    file = document.getElementById("f");
+            //canvas画图步骤 2D
+            //cxt.save() 保存路径(内存)
+            //cxt.beginPath(); 开始路径
+            //var cxt=canvas.getContext('2d')画笔设置canvas的绘图环境
+            //cxt.fillstyle='pink';//画笔填充颜色
+            //cxt.arc(250，250，100，0，Math.PI*2,false);圆的属性 圆心坐标 半径 弧度 绘画的方向
+            //cxt.closePath();//闭合路径
+            //cxt.fill();绘画
+            //cxt.restore();释放路径(内存)
 
-	var ext=file.value.substring(file.value.lastIndexOf(".")+1).toLowerCase();
+            //初始化画布属性
 
-     // gif在IE中无法显示
-     if(ext!='mp3'&&ext!='jpg'&&ext!='jpeg'){
-         alert("图片格式必须为PNG或者JPG"); 
-		 return;
-     }
-	 var isIE = navigator.userAgent.match(/MSIE/)!= null,
-		 isIE6 = navigator.userAgent.match(/MSIE 6.0/)!= null;
+            var cxt=canvas.getContext('2d');
+            var num=200;
+            var wW=0,wH=0;
+            var data = [];//存储粒子的数据属性
 
-	 if(isIE) {
-		file.select();
-		var reallocalpath = document.selection.createRange().text;
-		alert(pic.src);
-		// IE6浏览器设置img的src为本地路径可以直接显示图片
-         if (isIE6) {
-			pic.src = reallocalpath;
-			alert(pic.src);
-		 }else {
-			// 非IE6版本的IE由于安全问题直接设置img的src无法显示本地图片，但是可以通过滤镜来实现
-             pic.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(sizingMethod='image',src=\"" + reallocalpath + "\")";
-            // 设置img的src为base64编码的透明图片 取消显示浏览器默认图片
-			 pic.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
-			 alert(pic.src);
-		 }
-	 }else {
-		html5Reader(file);
-		//html5解决方案
-	 }
-}
+            init();
+            window.onresize=function()
+            {  
+                init();
+            } 
+            
+            function init()
+            {
+                wW = canvas.width=window.innerWidth;
+                wH = canvas.height=window.innerHeight;
+                console.log("窗口宽度="+wW);
+                console.log("窗口高度="+wH);
 
- function html5Reader(file){
-     var file = file.files[0];
-     var reader = new FileReader();
-     reader.readAsDataURL(file);
-     reader.onload = function(e){
-         var pic = document.getElementById("preview");
-		 pic.src=this.result;
-		 // alert(pic.src);
-     }
- }
-</script>
+                //生成随机圆 和 线的数据
+                for(var i=0;i<num;i++)
+                {
+                    data[i]=
+                    {
+                        X:Math.random()*wW,
+                        Y:Math.random()*wH,
+                        sX:Math.random()*0.2-0.1,
+                        sY:Math.random()*0.2-0.1,
+                        arcSize:Math.random()*4
+                    }
+                    // createArc(data[i].X,data[i].Y);
+                }
+               
+                 console.log(data);
 
-<body>
+            }
+            //生成圆
+            function createArc(x,y,size)
+            {
+                cxt.save();
+                cxt.beginPath();
+                cxt.fillStyle='#bcf9ff';
+                cxt.arc(x,y,size,Math.PI*2,false);
+                cxt.closePath();
+                cxt.fill();
+                cxt.restore();
+            }
+            //生成线条
+             function createLine(x1,y1,x2,y2)
+            {
+                var canvas = cxt;
+                canvas.strokeStyle = "rgba(102, 204, 255, 0.2)";
+                canvas.lineWidth = 1;
+                canvas.beginPath();
+                canvas.moveTo(x1, y1);//设置起点
+                canvas.lineTo(x2, y2);//画线
+                canvas.closePath();
+                canvas.stroke();
+            }
+            function drawPath()
+            {
+                cxt.clearRect(0,0,wW,wH);
+                for(var i=0;i<num;i++)
+                {
+                    data[i].X+=data[i].sX;
+                    data[i].Y+=data[i].sY;
+                    createArc(data[i].X,data[i].Y,data[i].arcSize);
+                    //设置边界返回
+                    if(data[i].X<0 || data[i].Y<0 || data[i].X>wW || data[i].Y>wH)
+                    {
+                        data[i].sX=-(data[i].sX);
+                        data[i].sY=-(data[i].sY);
+                    }
+                   
+                    for(var j=i+1;j<num;j++)
+                    {
+                        if(Math.pow(data[i].X-data[j].X,2)+Math.pow(data[i].Y-data[j].Y,2)<125*125)
+                        //可以连线
+                        createLine(data[i].X,data[i].Y,data[j].X,data[j].Y);
+                    }
+                }
+            }
+            setInterval(function(){ drawPath(); }, 1000/60);
 
-    
-		<input id="f" type="file" name="f" onchange="change()" />
-		<div class="upload">选择音乐</div>
-		<p>预览:</p>
-		<p>
-            <audio controls id="preview" alt="" name="pic" />
-		</p>
-
-</body>
-
-</html>
+        </script>
