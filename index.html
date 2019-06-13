@@ -107,7 +107,7 @@
                    
                     for(var j=i+1;j<num;j++)
                     {
-                        if(Math.pow(data[i].X-data[j].X,2)+Math.pow(data[i].Y-data[j].Y,2)<125*125)
+                        if(Math.pow(data[i].X-data[j].X,2)+Math.pow(data[i].Y-data[j].Y,2)<75*75)
                         //可以连线
                         createLine(data[i].X,data[i].Y,data[j].X,data[j].Y);
                     }
