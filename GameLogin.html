@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Car Game</title>
+        <meta name="Keywords" content="">
+        <meta name="Description" content="">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    </head>
+
+    <style>
+    body
+    {
+        margin: 0px;
+        padding: 0px;
+        /* background-color: black; */
+    }
+    #gameBackground
+    {
+        display: block;
+        background-color: black;
+    }
+    #gamebackground_one
+    {
+        display: none;
+    }
+    #gamebackground_two
+    {
+        display: none;
+    }
+    #redcar
+    {
+        display: none;
+    }
+    #yellowcar
+    {
+        display: none;
+    }
+    </style>
+    
+    <body>
+    <canvas id="gameBackground"></canvas>
+    <img src="./file/gamebackground.png" id="gamebackground_one"/>
+    <img src="./file/gamebackground.png" id="gamebackground_two"/>
+    <img src="./file/redcar.png" id="redcar"/>
+    <img src="./file/yellowcar.png" id="yellowcar"/>
+    </body>
+
+    <script>
+        var canvas=document.getElementById("gameBackground");
+        var ctx=canvas.getContext("2d");
+        var wW=0,wH=0;
+        init();
+        function init()
+        {   //根据浏览器窗口大小初始化canvas大小
+            wW = canvas.width=window.innerWidth;
+            wH = canvas.height=window.innerHeight;
+            console.log("窗口宽度="+wW);
+            console.log("窗口高度="+wH);
+        }
+        window.onresize=function()
+        {  
+            //窗口发生变化从新加载canvas属性
+            init();
+        } 
+
+        var back_one=document.getElementById("gamebackground_one");
+        var back_two=document.getElementById("gamebackground_two");
+        var redCar=document.getElementById("redcar");
+        var yellowCar=document.getElementById("yellowcar");
+
+        //设置赛道上黄车数量
+        var yellowCars =new Array(6);
+        //初始化全部黄车
+        for(let i=0;i<yellowCars.length;i++)
+        {
+            yellowCars[i]=new Array(2);//[0]存黄车位置X轴数据 [1]存黄车宽度Y轴数据
+            yellowCars[i][0]=(wW/2)-(yellowCar.width/2)+Math.random()*128-64;
+            if(i==0)
+            {
+                yellowCars[i][1]=0+Math.random()*500-500;
+            }
+            else
+            {
+                yellowCars[i][1]= yellowCars[i-1][1]+yellowCar.height+Math.random()*300;
+            }
+        }
+
+        //背景循环参数
+        var backOneSign=0;
+        var backTwoSign=-back_two.height;
+        //黄车速度参数
+        var sleep=2;
+        //小车位置参数
+        var leftAndRight=0;//左右
+        var upAndDown=0;//前后
+        //方向参数
+        var wPress=false;
+        var sPress=false;
+        var aPress=false;
+        var dPress=false;
+        //判断是否失败
+        var boom=false;
+
+        function mobileCar()
+        {
+            if(wPress)
+            {
+                if((wW/2)-(redCar.width/2)+upAndDown>(wW/2)-(redCar.width/2)+65||(wW/2)-(redCar.width/2)+upAndDown<(wW/2)-(redCar.width/2)-65)
+                {
+                    boom=true;
+                }
+                else
+                {
+                    upAndDown-=5;
+                }
+            }
+            if(sPress)
+            {
+                if((wW/2)-(redCar.width/2)+upAndDown>(wW/2)-(redCar.width/2)+65||(wW/2)-(redCar.width/2)+upAndDown<(wW/2)-(redCar.width/2)-65)
+                {
+                    boom=true;
+                }
+                else
+                {
+                    upAndDown+=5;
+                }
+            }
+            if(aPress)
+            {
+                if((wW/2)-(redCar.width/2)+upAndDown>(wW/2)-(redCar.width/2)+65||(wW/2)-(redCar.width/2)+upAndDown<(wW/2)-(redCar.width/2)-65)
+                {
+                    boom=true;
+                }
+                else
+                {
+                    leftAndRight-=5;
+                }
+            }
+            if(dPress)
+            {
+                if((wW/2)-(redCar.width/2)+upAndDown>(wW/2)-(redCar.width/2)+65||(wW/2)-(redCar.width/2)+upAndDown<(wW/2)-(redCar.width/2)-65)
+                {
+                    boom=true;
+                }
+                else
+                {
+                    leftAndRight+=5;
+                }
+            }
+        }
+
+        function carImpact(redCarX,redCarXAddWidth,redCarY,redCarYAddHeight,yellowCarX,yellowCarXAddWidth,yellowCarY,yellowCarYAddHeight)
+        {
+            if((redCarX<=yellowCarX&&yellowCarX<=redCarXAddWidth)&&(redCarY<=yellowCarY&&yellowCarY<=redCarYAddHeight))
+            {
+                //黄车左上角撞击
+                console.log("左上角撞击");
+                boom=true;
+            }
+            if((redCarX<=yellowCarXAddWidth&&yellowCarXAddWidth<=redCarXAddWidth)&&(redCarY<=yellowCarY&&yellowCarY<=redCarYAddHeight))
+            {
+                //黄车右上角撞击
+                console.log("右上角撞击");
+                boom=true;
+            }
+            if((redCarX<=yellowCarX&&yellowCarX<=redCarXAddWidth)&&(redCarY<=yellowCarYAddHeight&&yellowCarYAddHeight<=redCarYAddHeight))
+            {
+                //黄车左下角撞击
+                console.log("左下角撞击");
+                boom=true;
+            }
+            if((redCarX<=yellowCarXAddWidth&&yellowCarXAddWidth<=redCarXAddWidth)&&(redCarY<=yellowCarYAddHeight&&yellowCarYAddHeight<=redCarYAddHeight))
+            {
+                //黄车右下角撞击
+                console.log("右下角撞击");
+                boom=true;
+            }
+        }
+
+        document.onkeypress = function(e)
+        {	//对整个页面文档监听,按下按键
+		var keyNum=window.event ? e.keyCode :e.which;
+            switch(keyNum)
+            {
+                case 97: wPress=true;break;
+                case 100:sPress=true;break;
+                case 119:aPress=true;break;
+                case 115:dPress=true;break;
+            }
+            //console.log(keyNum+"键盘被按下");
+        }
+
+        document.onkeyup = function(e)
+        {	//对整个页面文档监听,按键抬起
+	    var keyNum=window.event ? e.keyCode :e.which;
+            switch(keyNum)
+            {
+                case 65:wPress=false; break;
+                case 68:sPress=false; break;
+                case 87:aPress=false; break;
+                case 83:dPress=false; break;
+            }
+            //console.log(keyNum+"按键被松开");
+        }
+
+        function drawPath()
+        {
+            if(boom)
+            {
+                alert("Game Over");
+            }
+            else
+            {
+                //将上一帧清除
+                ctx.clearRect(0,0,wW,wH);
+                //绘制游戏背景,使用双图片连接实现无缝循环效果
+                ctx.drawImage(back_one,(wW/2)-(back_one.width/2),backOneSign+=2);
+                ctx.drawImage(back_two,(wW/2)-(back_two.width/2),backTwoSign+=2);
+                if(backTwoSign>0)
+                {
+                    backOneSign=0;
+                    backTwoSign=-back_two.height;
+                }
+            
+                //绘制全部黄车
+                for(let k=0;k<yellowCars.length;k++)
+                {
+                    ctx.drawImage(yellowCar,yellowCars[k][0],yellowCars[k][1]+=sleep);
+                    //检测撞击参数
+                    carImpact((wW/2)-(redCar.width/2)+upAndDown,(wW/2)-(redCar.width/2)+upAndDown+redCar.width,(wH/2)-(redCar.height/2)+leftAndRight,(wH/2)-(redCar.height/2)+leftAndRight+redCar.height,yellowCars[k][0],yellowCars[k][0]+yellowCar.width,yellowCars[k][1],yellowCars[k][1]+yellowCar.height);
+                    //如果黄车跑出窗口显示范围则将数据重新设置
+                    if(yellowCars[k][1]>wH)
+                    {
+                        yellowCars[k][0]=(wW/2)-(yellowCar.width/2)+Math.random()*128-64;
+                        yellowCars[k][1]=Math.random()*500-500;
+                    }
+                }
+                //绘制红车,在黄车后绘制图层高于黄车
+                ctx.drawImage(redCar,(wW/2)-(redCar.width/2)+upAndDown,(wH/2)-(redCar.height/2)+leftAndRight);
+                mobileCar();
+            }
+        }
+
+        setInterval(function(){ drawPath(); },1000/60);
+
+    </script>
+</html>
